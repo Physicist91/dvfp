@@ -1,6 +1,8 @@
 from torch.utils.data import Dataset, DataLoader
 import scipy.io
 import numpy as np
+import os
+from PIL import Image
 
 class CarsDataset(Dataset):
     """
@@ -11,7 +13,7 @@ class CarsDataset(Dataset):
     http://ai.stanford.edu/~jkrause/cars/car_dataset.html
     """
 
-    def __init__(self, mat_anno, data_dir, car_names, cleaned=None, transform=None):
+    def __init__(self, mat_anno, data_dir, car_names, transform=None):
         """
         Args:
             mat_anno (string): Path to the MATLAB annotation file.
@@ -23,15 +25,6 @@ class CarsDataset(Dataset):
         self.full_data_set = scipy.io.loadmat(mat_anno)
         self.car_annotations = self.full_data_set['annotations']
         self.car_annotations = self.car_annotations[0]
-
-        if cleaned is not None:
-            cleaned_annos = []
-            print("Cleaning up data set (only take pics with rgb chans)...")
-            clean_files = np.loadtxt(cleaned, dtype=str)
-            for c in self.car_annotations:
-                if c[-1][0] in clean_files:
-                    cleaned_annos.append(c)
-            self.car_annotations = cleaned_annos
 
         self.car_names = scipy.io.loadmat(car_names)['class_names']
         self.car_names = np.array(self.car_names[0])
@@ -46,7 +39,9 @@ class CarsDataset(Dataset):
         img_name = os.path.join(self.data_dir, self.car_annotations[idx][-1][0])
         image = Image.open(img_name)
         car_class = self.car_annotations[idx][-2][0][0]
-
+        
+        if len(np.array(image).shape) < 3:
+            image = image.convert("RGB")
         if self.transform:
             image = self.transform(image)
 
