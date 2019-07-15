@@ -37,7 +37,36 @@ def get_accuracy(output, target, topk=(1, 5)):
     return res
 
 
-def save_train_info(self, epoch, batch, maxbatch, losses, top1, top5):
+def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+    """save model weights
+    
+    [description]
+    
+    Arguments:
+        state {[type]} -- [description] a dict describe some params
+        is_best {bool} -- [description] a bool value
+    
+    Keyword Arguments:
+        filename {str} -- [description] (default: {'checkpoint.pth.tar'})
+    """
+    root_dir = get_root_dir()
+    weight_dir = os.path.join(root_dir, 'weight')
+    if not os.path.exists(weight_dir):
+        os.mkdir(weight_dir)
+    
+    epoch = state['epoch']
+    prec1 = state['top1']
+
+    file_path = os.path.join(weight_dir, 'epoch_{:04d}_top1_{:02d}_{}'.format(int(epoch), int(prec1), filename))  
+    torch.save(state, file_path)
+    
+    best_path = os.path.join(weight_dir, 'model_best.pth.tar')
+    
+    if is_best:
+        shutil.copyfile(file_path, best_path)
+
+        
+def save_train_info(epoch, batch, maxbatch, losses):
         """
         Helper function to save training information
         """
@@ -51,16 +80,16 @@ def save_train_info(self, epoch, batch, maxbatch, losses, top1, top5):
             os.mkdir(log_dir)
         
         log_file = os.path.join(log_dir, 'log_train.txt')
-        if not os.path.exists(log_file):
-            os.mknod(log_file)
+        #if not os.path.exists(log_file):
+        #    os.mknod(log_file)
 
-        with open(log_file, 'a') as f:
+        with open(log_file, 'w') as f:
             f.write('Epoch: [{}][{}/{}]\n'
-                    'Loss {:.4f} ({:.4f})\t'
-                    'Loss G-Stream {:.4f} ({:.4f})\t'
-                    'Loss P-Stream {:.4f} ({:.4f})\t'
-                    'Loss Side Branch {:.4f} ({:.4f})\n'
+                    'Loss {:.4f} \t'
+                    'Loss G-Stream {:.4f} \t'
+                    'Loss P-Stream {:.4f} \t'
+                    'Loss Side Branch {:.4f} \n'
                     'Top-1 accuracy ({:.3f})\t'
-                    'Top-5 accuracy ({:.3f})\n'.format(epoch, batch, maxbatch, loss, loss1, loss2, loss3, top1, top5))
+                    'Top-5 accuracy ({:.3f})\n'.format(epoch, batch, maxbatch, losses[0], losses[1], losses[2], losses[3], losses[4], losses[5]))
             
             

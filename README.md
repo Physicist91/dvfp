@@ -1,6 +1,12 @@
-# dvfp
+# Deep Learning for fine-grained classification
 
-Deep Vision final project.
+Here we implement the hottest state-of-the-art techniques for fine-grained classification.
+
+1. [Discriminative filter learning within CNN](https://arxiv.org/abs/1611.09932) -- CVPR, June 2018
+2. [Weakly supervised Data Augmentation Network](https://arxiv.org/abs/1901.09891) -- ArXiV preprint, March 2019.
+3. Bilinear pooling
+
+Implemented using [PyTorch](https://pytorch.org/). This work is done as part of the final project for Deep Vision, ST2019.
 
 Authors:
 * Denis Zavadski
