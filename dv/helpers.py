@@ -66,14 +66,11 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
         shutil.copyfile(file_path, best_path)
 
         
-def save_train_info(epoch, batch, maxbatch, losses):
+def save_train_info(epoch, batch, maxbatch, loss, losses):
         """
         Helper function to save training information
         """
-        loss = losses[0]
-        loss1 = losses[1]
-        loss2 = losses[2]
-        loss3 = losses[3]
+
         root_dir = os.path.abspath('./')
         log_dir = os.path.join(root_dir, 'log') 
         if not os.path.exists(log_dir):
@@ -90,6 +87,6 @@ def save_train_info(epoch, batch, maxbatch, losses):
                     'Loss P-Stream {:.4f} \t'
                     'Loss Side Branch {:.4f} \n'
                     'Top-1 accuracy ({:.3f})\t'
-                    'Top-5 accuracy ({:.3f})\n'.format(epoch, batch, maxbatch, losses[0], losses[1], losses[2], losses[3], losses[4], losses[5]))
+                    'Top-5 accuracy ({:.3f})\n'.format(epoch, batch, maxbatch, loss, losses[0], losses[1], losses[2], losses[3], losses[4]))
             
             

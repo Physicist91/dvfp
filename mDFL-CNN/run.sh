@@ -2,10 +2,11 @@ CUDA_VISIBLE_DEVICES=0   python main.py \
 --gpu 1 \
 --dataroot '/export/home/dv/dv029/DFL-CNN/dataset' \
 --result './vis_result' \
---lr 0.05 \
+--lr 0.005 \
 --epochs 40 \
---workers 8 \
---train_batchsize_per_gpu 16 \
---init_type 'normal' \
---print-freq 100 \
---eval_epoch_threshold 20
+--workers 4 \
+--train_batchsize_per_gpu 8 \
+--init_type 'xavier' \
+--print-freq 1 \
+--eval_epoch_threshold 5 \
+--vis_epoch 5

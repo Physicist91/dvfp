@@ -52,6 +52,7 @@ class DeepVision_VGG16(nn.Module):
         # TODO:
         # add ReLU
         # add non-random initialization
+        # add FCs instead of adaptive avg pool if there is time
 
     def forward(self, x):
         batch_size = x.size(0)

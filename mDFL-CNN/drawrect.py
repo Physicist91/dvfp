@@ -1,4 +1,3 @@
-from model.DFL import DFL_VGG16
 from utils.util import *
 from utils.transform import *
 from train import *
@@ -21,7 +20,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from utils.MyImageFolderWithPaths import ImageFolderWithPaths
+from dv.MyImageFolderWithPaths import CarsDataset
 from PIL import Image, ImageFont, ImageDraw
 import os
 import re
@@ -125,14 +124,13 @@ def get_transform():
     return transforms.Compose(transform_list)
 
 
-def draw_patch(epoch, model, index2classlist, args):
+def draw_patch(epoch, model, args):
     """Implement: use model to predict images and draw ten boxes by POOL6
     path to images need to predict is in './dataset/bird'
 
     result : directory to accept images with ten boxes
     subdirectory is epoch, e,g.0,1,2...
 
-    index2classlist : transform predict label to specific classname
     """
     result = os.path.abspath(args.result)
     if not os.path.isdir(result):

@@ -74,7 +74,7 @@ class CarsDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image, car_class
+        return image, car_class - 1 # either you substract one here, or use nclass=197 in the NN
 
     def map_class(self, id):
         id = np.ravel(id)

@@ -1,4 +1,4 @@
-from model.DFL import DFL_VGG16
+from dv.DFL import DFL_VGG16, DFL_ResNet, DFL_ResNet_for_sample
 from utils.util import *
 from utils.transform import *
 from train import *
@@ -21,7 +21,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from utils.MyImageFolderWithPaths import *
+from dv.MyImageFolderWithPaths import CarsDataset
 from drawrect import *
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
@@ -90,15 +90,24 @@ def main():
 
     
     print('DFL-CNN <==> Part2 : Load Network  <==> Begin')
-    model = DFL_VGG16(k = 10, nclass = 200)     
+    #model = DFL_VGG16(k = 10, nclass = 196) # stanford cars has 196 classes    
+    model = DFL_ResNet(k = 10, nclass = 196)  
+    
+    # for non-random initialization
+    model_for_sample = DFL_ResNet_for_sample(k = 10, nclass = 196)
+
+    
     if args.gpu is not None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = nn.DataParallel(model, device_ids=range(args.gpu))
         model.to(device)
+        model_for_sample.to(device)
         cudnn.benchmark = True
     if args.init_type is not None:
-        try: 
+        try:
+            #init_weights
             init_weights(model, init_type=args.init_type)
+            #model.state_dict()['conv6.weight'] = center
             model.to(device)
         except:
             sys.exit('DFL-CNN <==> Part2 : Load Network  <==> Init_weights error!')
@@ -194,7 +203,7 @@ def main():
 
         # do a test for visualization    
         if epoch % args.vis_epoch  == 0 and epoch != 0: 
-            draw_patch(epoch, model, index2classlist, args)
+            draw_patch(epoch, model, args)
         
 
 
