@@ -63,8 +63,8 @@ parser.add_argument('--log_train_dir', default='log_train', type=str,
                     help='log for train')
 parser.add_argument('--log_test_dir', default='log_test', type=str,
                     help='log for test')
-parser.add_argument('--nclass', default=583, type=int,
-                    help='num of classes')
+parser.add_argument('--nclass', default=196, type=int,
+                    help='num of classes -- stanford cars has 196 classes (default: 196)')
 parser.add_argument('--eval_epoch', default=2, type=int,
                     help='every eval_epoch we will evaluate')
 parser.add_argument('--vis_epoch', default=2, type=int,
@@ -75,8 +75,6 @@ parser.add_argument('--w', default=448, type=int,
                     help='transform, seen as align')
 parser.add_argument('--h', default=448, type=int,
                     help='transform, seen as align')
-parser.add_argument('--eval_epoch_threshold', default=60, type=int,
-                    help='Minimum epochs to reach before evaluating on test set')
 
 best_prec1 = 0
 
@@ -91,10 +89,10 @@ def main():
     
     print('DFL-CNN <==> Part2 : Load Network  <==> Begin')
     #model = DFL_VGG16(k = 10, nclass = 196) # stanford cars has 196 classes    
-    model = DFL_ResNet(k = 10, nclass = 196)  
+    model = DFL_ResNet(k = 10, nclass = nclass)  
     
     # for non-random initialization
-    model_for_sample = DFL_ResNet_for_sample(k = 10, nclass = 196)
+    model_for_sample = DFL_ResNet_for_sample(k = 10, nclass = nclass)
 
     
     if args.gpu is not None:
@@ -187,7 +185,7 @@ def main():
         print('Model on GPU?: ', next(model.parameters()).is_cuda)
         
         # evaluate on validation set
-        if epoch % args.eval_epoch == 0 and epoch != 0 and epoch > args.eval_epoch_threshold:
+        if epoch % args.eval_epoch == 0:
             prec1 = validate_dv(args, test_loader_simple, model, criterion, epoch)
             
             # remember best prec@1 and save checkpoint

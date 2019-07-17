@@ -8,5 +8,4 @@ CUDA_VISIBLE_DEVICES=0   python main.py \
 --train_batchsize_per_gpu 8 \
 --init_type 'xavier' \
 --print-freq 1 \
---eval_epoch_threshold 5 \
---vis_epoch 5
+--vis_epoch 1
