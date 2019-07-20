@@ -2,7 +2,7 @@ from dv.DFL import DFL_VGG16, DFL_ResNet50, Energy_ResNet50
 from dv.init import *
 from dv.MyImageFolderWithPaths import CarsDataset
 from utils.util import *
-from utils.transform import *
+from dv.transform import *
 from train import *
 from validate import *
 import sys
@@ -82,24 +82,23 @@ def main():
     global args, best_prec1
     args = parser.parse_args()
     print(sys.argv[1:])
+    img_dir = os.path.abspath(args.dataroot)
     print('DFL-CNN <==> Part1 : prepare for parameters <==> Done')
 
     print('DFL-CNN <==> Part2 : Load Network  <==> Begin')
 
     #model = DFL_VGG16(k = 10, nclass = 196) # stanford cars has 196 classes
-    model = DFL_ResNet(k = args.num_filters, nclass = nclass)
-    energyNet = Energy_ResNet(k = args.num_filters, nclass = nclass) # for non-random initialization
+    model = DFL_ResNet50(k = args.num_filters, nclass = args.nclass)
+    energyNet = Energy_ResNet50(k = args.num_filters, nclass = args.nclass) # for non-random initialization
 
-
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if args.gpu is not None:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = nn.DataParallel(model, device_ids=range(args.gpu))
         model.to(device)
-        model_for_sample.to(device)
+        energyNet.to(device)
         cudnn.benchmark = True
 
     if args.init_type is not None:
-        try:
             transform_sample = get_transform_for_test_simple()
             sample_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
                                     os.path.join(img_dir,'cars_train'),
@@ -109,15 +108,13 @@ def main():
             sample_loader = torch.utils.data.DataLoader(
                 sample_dataset, batch_size=1, shuffle=True, # use batch_size = 1 please
                 num_workers=args.workers, pin_memory=True, drop_last = False)
-            center = init_patch(args, sample_loader, energyNet)
+            center = init_patch(args, sample_loader, energyNet, 1024) #1024 channels in the feature map
 
             init_weights(model, init_type=args.init_type) # initialize all layers
-            print('Network is initialized with: %s' % init_type)
+            print('Network is initialized with: %s!' % args.init_type)
             model.state_dict()['conv6.weight'] = center #the 1x1 filters are initialized with patch representations
-            print('Patch detectors are initialized with non-random init.')
+            print('Patch detectors are initialized with non-random init!')
             model.to(device)
-        except:
-            sys.exit('DFL-CNN <==> Part2 : Load Network  <==> Init_weights error!')
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay = args.weight_decay)
@@ -138,7 +135,6 @@ def main():
 
 
     print('DFL-CNN <==> Part3 : Load Dataset  <==> Begin')
-    img_dir = os.path.abspath(args.dataroot)
 
     # transformations are defined in "dv" module
     transform_train = get_transform_for_train()

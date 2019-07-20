@@ -199,10 +199,12 @@ class Energy_ResNet50(nn.Module):
         center = torch.norm(inter4, dim=0)
 
         patches = torch.zeros((inter4.shape[0], self.k))
+        center = center.view(-1)
         for i in range(self.k):
             idx = torch.argmax(center)
-            offset = idx // patches.shape[0]
-            patches[:, i] = inter4[:, offset, (idx - offset * patches.shape[0])]
+            center[idx] = -1
+            offset = idx // 28
+            patches[:, i] = inter4[:, offset, (idx - offset * 28)]
 
         return patches
 
