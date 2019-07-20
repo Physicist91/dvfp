@@ -1,15 +1,15 @@
-from dv.DFL import DFL_VGG16, DFL_ResNet, DFL_ResNet_for_sample
+from dv.DFL import DFL_VGG16, DFL_ResNet50, Energy_ResNet50
+from dv.init import *
+from dv.MyImageFolderWithPaths import CarsDataset
 from utils.util import *
 from utils.transform import *
 from train import *
 from validate import *
-from utils.init import *
 import sys
 import argparse
 import os
 import random
 import shutil
-import time
 import warnings
 import torch
 import torch.nn as nn
@@ -21,10 +21,9 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from dv.MyImageFolderWithPaths import CarsDataset
 from drawrect import *
 
-parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
+parser = argparse.ArgumentParser(description='Discriminative Filter Learning within a CNN')
 parser.add_argument('--dataroot', metavar='DIR',
                     help='path to dataset')
 parser.add_argument('--result', metavar='DIR',
@@ -55,8 +54,8 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
                     help='use pre-trained model')
-parser.add_argument('--seed', default=None, type=int,
-                    help='seed for initializing training. ')
+parser.add_argument('--num_filters', default=4, type=int,
+                    help='Number of filters per class.')
 parser.add_argument('--gpu', default=4, type=int,
                     help='GPU nums to use.')
 parser.add_argument('--log_train_dir', default='log_train', type=str,
@@ -85,27 +84,37 @@ def main():
     print(sys.argv[1:])
     print('DFL-CNN <==> Part1 : prepare for parameters <==> Done')
 
-
-    
     print('DFL-CNN <==> Part2 : Load Network  <==> Begin')
-    #model = DFL_VGG16(k = 10, nclass = 196) # stanford cars has 196 classes    
-    model = DFL_ResNet(k = 10, nclass = nclass)  
-    
-    # for non-random initialization
-    model_for_sample = DFL_ResNet_for_sample(k = 10, nclass = nclass)
 
-    
+    #model = DFL_VGG16(k = 10, nclass = 196) # stanford cars has 196 classes
+    model = DFL_ResNet(k = args.num_filters, nclass = nclass)
+    energyNet = Energy_ResNet(k = args.num_filters, nclass = nclass) # for non-random initialization
+
+
     if args.gpu is not None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = nn.DataParallel(model, device_ids=range(args.gpu))
         model.to(device)
         model_for_sample.to(device)
         cudnn.benchmark = True
+
     if args.init_type is not None:
         try:
-            #init_weights
-            init_weights(model, init_type=args.init_type)
-            #model.state_dict()['conv6.weight'] = center
+            transform_sample = get_transform_for_test_simple()
+            sample_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
+                                    os.path.join(img_dir,'cars_train'),
+                                    os.path.join(img_dir,'devkit/cars_meta.mat'),
+                                    transform=transform_sample
+                                    )
+            sample_loader = torch.utils.data.DataLoader(
+                sample_dataset, batch_size=1, shuffle=True, # use batch_size = 1 please
+                num_workers=args.workers, pin_memory=True, drop_last = False)
+            center = init_patch(args, sample_loader, energyNet)
+
+            init_weights(model, init_type=args.init_type) # initialize all layers
+            print('Network is initialized with: %s' % init_type)
+            model.state_dict()['conv6.weight'] = center #the 1x1 filters are initialized with patch representations
+            print('Patch detectors are initialized with non-random init.')
             model.to(device)
         except:
             sys.exit('DFL-CNN <==> Part2 : Load Network  <==> Init_weights error!')
@@ -126,7 +135,7 @@ def main():
             print('DFL-CNN <==> Part2 : Load Network  <==> Failed')
     print('DFL-CNN <==> Part2 : Load Network  <==> Done')
 
-    
+
 
     print('DFL-CNN <==> Part3 : Load Dataset  <==> Begin')
     img_dir = os.path.abspath(args.dataroot)
@@ -158,7 +167,7 @@ def main():
     # A list for target to classname
     #index2classlist = train_dataset.index2classlist()
 
-    # data loader   
+    # data loader
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.gpu * args.train_batchsize_per_gpu, shuffle=True,
         num_workers=args.workers, pin_memory=True, drop_last = False)
@@ -169,25 +178,25 @@ def main():
         test_dataset_simple, batch_size=1, shuffle=True,
         num_workers=args.workers, pin_memory=True, drop_last = False)
     print('DFL-CNN <==> Part3 : Load Dataset  <==> Done')
-   
+
 
     print('DFL-CNN <==> Part4 : Train and Test  <==> Begin')
     if args.gpu is not None:
         torch.cuda.empty_cache()
-        
+
     for epoch in range(args.start_epoch, args.epochs):
         adjust_learning_rate(args, optimizer, epoch, gamma = 0.1)
-        
+
         # train for one epoch
         train(args, train_loader, model, criterion, optimizer, epoch)
 
         # check if model is still on GPU
         print('Model on GPU?: ', next(model.parameters()).is_cuda)
-        
+
         # evaluate on validation set
         if epoch % args.eval_epoch == 0:
             prec1 = validate_dv(args, test_loader_simple, model, criterion, epoch)
-            
+
             # remember best prec@1 and save checkpoint
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
@@ -197,14 +206,14 @@ def main():
                 'best_prec1': best_prec1,
                 'optimizer' : optimizer.state_dict(),
                 'prec1'     : prec1,
-            }, is_best) 
+            }, is_best)
 
-        # do a test for visualization    
-        if epoch % args.vis_epoch  == 0 and epoch != 0: 
+        # do a test for visualization
+        if epoch % args.vis_epoch  == 0 and epoch != 0:
             draw_patch(epoch, model, args)
-        
+
 
 
 
 if __name__ == '__main__':
-     main() 
+     main()
