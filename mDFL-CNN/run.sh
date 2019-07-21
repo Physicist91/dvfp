@@ -9,4 +9,7 @@ CUDA_VISIBLE_DEVICES=0   python main.py \
 --init_type 'xavier' \
 --print-freq 1 \
 --vis_epoch 1 \
---num_filters 4
+--eval_epoch 1 \
+--num_filters 4 \
+--nclass 200 \
+--dataset 'birds'
