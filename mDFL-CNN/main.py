@@ -1,8 +1,8 @@
 from dv.DFL import DFL_VGG16, DFL_ResNet50, Energy_ResNet50
 from dv.init import *
-from dv.MyImageFolderWithPaths import CarsDataset
-from utils.util import *
+from dv.MyImageFolderWithPaths import CarsDataset, CUB_2011
 from dv.transform import *
+from utils.util import *
 from train import *
 from validate import *
 import sys
@@ -13,12 +13,9 @@ import shutil
 import warnings
 import torch
 import torch.nn as nn
-import torch.nn.parallel
 import torch.backends.cudnn as cudnn
-import torch.distributed as dist
 import torch.optim
 import torch.utils.data
-import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from drawrect import *
@@ -27,7 +24,7 @@ parser = argparse.ArgumentParser(description='Discriminative Filter Learning wit
 parser.add_argument('--dataroot', metavar='DIR',
                     help='path to dataset')
 parser.add_argument('--result', metavar='DIR',
-                    help='path to dataset')
+                    help='path to store visualization outputs')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=100000, type=int, metavar='N',
@@ -40,7 +37,7 @@ parser.add_argument('-testbatch', '--test_batch_size', default=32, type=int,
                     metavar='N', help='mini-batch size (default: 32)')
 parser.add_argument('--init_type',  default='xavier', type=str,
                     metavar='INIT',help='init net')
-parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
+parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float,
                     metavar='momentum', help='momentum')
@@ -71,9 +68,11 @@ parser.add_argument('--vis_epoch', default=2, type=int,
 parser.add_argument('--save_epoch', default=2, type=int,
                     help='every save_epoch we will evaluate')
 parser.add_argument('--w', default=448, type=int,
-                    help='transform, seen as align')
+                    help='desired image width to crop, seen as align')
 parser.add_argument('--h', default=448, type=int,
-                    help='transform, seen as align')
+                    help='desired image height to crop, seen as align')
+parser.add_argument('--dataset',  default='cars', type=str,
+                    metavar='dataset',help='Data to use (cars, birds)')
 
 best_prec1 = 0
 
@@ -99,22 +98,25 @@ def main():
         cudnn.benchmark = True
 
     if args.init_type is not None:
-            transform_sample = get_transform_for_test_simple()
+        transform_sample = get_transform_for_test_simple()
+
+        if args.dataset == 'cars':
             sample_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
                                     os.path.join(img_dir,'cars_train'),
                                     os.path.join(img_dir,'devkit/cars_meta.mat'),
                                     transform=transform_sample
                                     )
-            sample_loader = torch.utils.data.DataLoader(
-                sample_dataset, batch_size=1, shuffle=True, # use batch_size = 1 please
-                num_workers=args.workers, pin_memory=True, drop_last = False)
-            center = init_patch(args, sample_loader, energyNet, 1024) #1024 channels in the feature map
+        elif args.dataset == "birds":
+            sample_dataset = CUB_2011(img_dir, train=True, transform=transform_sample, download=True)
 
-            init_weights(model, init_type=args.init_type) # initialize all layers
-            print('Network is initialized with: %s!' % args.init_type)
-            model.state_dict()['conv6.weight'] = center #the 1x1 filters are initialized with patch representations
-            print('Patch detectors are initialized with non-random init!')
-            model.to(device)
+        sample_loader = torch.utils.data.DataLoader(sample_dataset, batch_size=1, shuffle=True, num_workers=args.workers, pin_memory=True, drop_last = False)
+        center = init_patch(args, sample_loader, energyNet, 1024) #1024 channels in the feature map
+
+        init_weights(model, init_type=args.init_type) # initialize all layers
+        print('Network is initialized with: %s!' % args.init_type)
+        model.state_dict()['conv6.weight'] = center #the 1x1 filters are initialized with patch representations
+        print('Patch detectors are initialized with non-random init!')
+        model.to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay = args.weight_decay)
@@ -141,27 +143,26 @@ def main():
     transform_test  = get_transform_for_test()
     transform_test_simple = get_transform_for_test_simple()
 
-    train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
-                            os.path.join(img_dir,'cars_train'),
-                            os.path.join(img_dir,'devkit/cars_meta.mat'),
-                            transform=transform_train
-                            )
-
-    test_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_test_annos_withlabels.mat'),
-                            os.path.join(img_dir,'cars_test'),
-                            os.path.join(img_dir,'devkit/cars_meta.mat'),
-                            transform=transform_test
-                            )
-
-    test_dataset_simple = CarsDataset(os.path.join(img_dir,'devkit/cars_test_annos_withlabels.mat'),
-                            os.path.join(img_dir,'cars_test'),
-                            os.path.join(img_dir,'devkit/cars_meta.mat'),
-                            transform=transform_test_simple
-                            )
-
-
-    # A list for target to classname
-    #index2classlist = train_dataset.index2classlist()
+    if args.dataset == "birds":
+        train_dataset = CUB_2011(img_dir, train=True, transform=transform_train)
+        test_dataset = CUB_2011(img_dir, train=False, transform=transform_test)
+        test_dataset_simple = CUB_2011(img_dir, train=False, transform=transform_test_simple)
+    elif args.dataset == "cars":
+        train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
+            os.path.join(img_dir,'cars_train'),
+            os.path.join(img_dir,'devkit/cars_meta.mat'),
+            transform=transform_train
+            )
+        test_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_test_annos_withlabels.mat'),
+            os.path.join(img_dir,'cars_test'),
+            os.path.join(img_dir,'devkit/cars_meta.mat'),
+            transform=transform_test
+            )
+        test_dataset_simple = CarsDataset(os.path.join(img_dir,'devkit/cars_test_annos_withlabels.mat'),
+            os.path.join(img_dir,'cars_test'),
+            os.path.join(img_dir,'devkit/cars_meta.mat'),
+            transform=transform_test_simple
+            )
 
     # data loader
     train_loader = torch.utils.data.DataLoader(
@@ -191,7 +192,7 @@ def main():
 
         # evaluate on validation set
         if epoch % args.eval_epoch == 0:
-            prec1 = validate_dv(args, test_loader_simple, model, criterion, epoch)
+            prec1 = validate_dv(args, test_loader, model, criterion, epoch)
 
             # remember best prec@1 and save checkpoint
             is_best = prec1 > best_prec1
