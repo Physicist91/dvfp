@@ -125,11 +125,16 @@ def draw_patch_v2(epoch, model, args, class_idx):
     subdirectory is epoch, e,g.0,1,2...
 
     """
+    if args.gpu is not None:
+        k = model.module.k
+    else:
+        k = model.k
+
     result = os.path.abspath(args.result)
     if not os.path.isdir(result):
         os.mkdir(result)
 
-    path_img = os.path.join(os.path.abspath('./'), 'vis_img')
+    path_img = os.path.join(os.path.abspath('./'), args.vis_img)
     num_imgs = len(os.listdir(path_img))
 
     dirs = os.path.join(result, str(epoch))
@@ -150,11 +155,11 @@ def draw_patch_v2(epoch, model, args, class_idx):
         out = out1 + out2 + 0.1 *out3
 
         value, index = torch.max(out.cpu(), 1)
-        vrange = np.arange(0, model.k)
+        vrange = np.arange(0, k)
         # select from index - index+9 in 2000
         # in test I use 1st class, so I choose indices[0, 9]
         for i in vrange:
-            indice = indices[0, model.k*class_idx + i]
+            indice = indices[0, k*class_idx + i]
             #row, col = indice/56, indice%56
             row, col = indice/28, indice%28 #ResNet feature map size
             p_tl = (8*col, 8*row)
@@ -192,6 +197,12 @@ def draw_patch(epoch, model, args):
     subdirectory is epoch, e,g.0,1,2...
 
     """
+
+    if args.gpu is not None:
+        k = model.module.k
+    else:
+        k = model.k
+
     result = os.path.abspath(args.result)
     if not os.path.isdir(result):
         os.mkdir(result)
@@ -217,7 +228,7 @@ def draw_patch(epoch, model, args):
         out = out1 + out2 + 0.1 *out3
 
         value, index = torch.max(out.cpu(), 1)
-        vrange = np.arange(0, model.k)
+        vrange = np.arange(0, k)
         # select from index - index+9 in 2000
         # in test I use 1st class, so I choose indices[0, 9]
         for i in vrange:
