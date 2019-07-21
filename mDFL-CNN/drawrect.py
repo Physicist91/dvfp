@@ -1,8 +1,8 @@
-from utils.util import *
-from utils.transform import *
+from dv.transform import *
+from dv.init import *
+from dv.MyImageFolderWithPaths import CarsDataset
 from train import *
 from validate import *
-from utils.init import *
 import sys
 import argparse
 import os
@@ -20,11 +20,11 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from dv.MyImageFolderWithPaths import CarsDataset
 from PIL import Image, ImageFont, ImageDraw
 import os
 import re
 import numpy as np
+from utils.util import *
 
 def scale_width(img, target_width):
     ow, oh = img.size
@@ -32,8 +32,8 @@ def scale_width(img, target_width):
     target_height = int(target_width * oh / ow)
     h = target_height
     return img.resize((w, h), Image.BICUBIC)
-    
-    
+
+
 def transform_onlysize():
     transform_list = []
     transform_list.append(transforms.Resize(448))
@@ -56,8 +56,8 @@ def read_specific_line(line, path):
             currentline = line
             c.append(currentline)
             line = f.readline()
-        
-    reg =  c[target-1].split(',')[-1]     
+
+    reg =  c[target-1].split(',')[-1]
     return reg
 
 def path_to_contents(path):
@@ -79,12 +79,12 @@ def create_font(fontfile, contents):
         return None
     try:
         font = ImageFont.truetype(fontfile, 36, encoding = 'unic')
-    
+
         # get line size
         # text_width, text_font.getsize(unicode_text)
-    
+
         canvas = Image.new('RGB', (128, 48), "white")
-    
+
         draw = ImageDraw.Draw(canvas)
         draw.text((5,5), unicode_text, 'black', font)
 
@@ -110,18 +110,78 @@ def concat_images(imga, imgb):
 
 def get_transform():
     transform_list = []
-    
     transform_list.append(transforms.Lambda(lambda img:scale_keep_ar_min_fixed(img, 448)))
-    
     #transform_list.append(transforms.RandomHorizontalFlip(p=0.3))
-    
     transform_list.append(transforms.CenterCrop((448, 448)))
-    
     transform_list.append(transforms.ToTensor())
-    
     transform_list.append(transforms.Normalize(mean=(0.5,0.5,0.5),std=(0.5,0.5,0.5)))
-    
     return transforms.Compose(transform_list)
+
+def draw_patch_v2(epoch, model, args, class_idx):
+    """Implement: use model to predict images and draw ten boxes by POOL6
+    path to images need to predict is in './vis_img'
+
+    result : directory to accept images with ten boxes
+    subdirectory is epoch, e,g.0,1,2...
+
+    """
+    result = os.path.abspath(args.result)
+    if not os.path.isdir(result):
+        os.mkdir(result)
+
+    path_img = os.path.join(os.path.abspath('./'), 'vis_img')
+    num_imgs = len(os.listdir(path_img))
+
+    dirs = os.path.join(result, str(epoch))
+    if not os.path.exists(dirs):
+        os.mkdir(dirs)
+
+    for original in range(num_imgs):
+        img_path = os.path.join(path_img, '{}.jpg'.format(original))
+
+        transform1 = get_transform()       # transform for predict
+        transform2 = transform_onlysize()  # transform for draw
+
+        img = Image.open(img_path)
+        img_pad = transform2(img)
+        img_tensor = transform1(img)
+        img_tensor = img_tensor.unsqueeze(0)
+        out1, out2, out3, indices = model(img_tensor)
+        out = out1 + out2 + 0.1 *out3
+
+        value, index = torch.max(out.cpu(), 1)
+        vrange = np.arange(0, model.k)
+        # select from index - index+9 in 2000
+        # in test I use 1st class, so I choose indices[0, 9]
+        for i in vrange:
+            indice = indices[0, model.k*class_idx + i]
+            #row, col = indice/56, indice%56
+            row, col = indice/28, indice%28 #ResNet feature map size
+            p_tl = (8*col, 8*row)
+            p_br = (col*8+92, row*8+92)
+            draw = ImageDraw.Draw(img_pad)
+            draw.rectangle((p_tl, p_br), outline='green')
+
+        # search corresponding classname
+        idx = int(index[0])
+        img_dir = os.path.abspath(args.dataroot)
+        train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
+                            os.path.join(img_dir,'cars_train'),
+                            os.path.join(img_dir,'devkit/cars_meta.mat'),
+                            transform=get_transform()
+                            )
+        #dirname = index2classlist[idx]
+        dirname = train_dataset.map_class(idx)
+
+        filename = 'epoch_'+'{:0>3}'.format(epoch)+'_[org]_'+str(original)+'_[predict]_'+str(dirname)+'.jpg'
+        filepath = os.path.join(os.path.join(result,str(epoch)),filename)
+        img_pad.save(filepath, "JPEG")
+
+
+if __name__ == '__main__':
+    draw_patch()
+
+
 
 
 def draw_patch(epoch, model, args):
@@ -142,11 +202,11 @@ def draw_patch(epoch, model, args):
     dirs = os.path.join(result, str(epoch))
     if not os.path.exists(dirs):
         os.mkdir(dirs)
-    
+
     for original in range(num_imgs):
-        img_path = os.path.join(path_img, '{}.jpg'.format(original)) 
-        
-        transform1 = get_transform()       # transform for predict 
+        img_path = os.path.join(path_img, '{}.jpg'.format(original))
+
+        transform1 = get_transform()       # transform for predict
         transform2 = transform_onlysize()  # transform for draw
 
         img = Image.open(img_path)
@@ -155,11 +215,11 @@ def draw_patch(epoch, model, args):
         img_tensor = img_tensor.unsqueeze(0)
         out1, out2, out3, indices = model(img_tensor)
         out = out1 + out2 + 0.1 *out3
-    
+
         value, index = torch.max(out.cpu(), 1)
-        vrange = np.arange(0, 10)  
+        vrange = np.arange(0, model.k)
         # select from index - index+9 in 2000
-        # in test I use 1st class, so I choose indices[0, 9] 
+        # in test I use 1st class, so I choose indices[0, 9]
         for i in vrange:
             indice = indices[0, i]
             row, col = indice/56, indice%56
@@ -167,22 +227,22 @@ def draw_patch(epoch, model, args):
             p_br = (col*8+92, row*8+92)
             draw = ImageDraw.Draw(img_pad)
             draw.rectangle((p_tl, p_br), outline='red')
-    
+
         # search corresponding classname
         idx = int(index[0])
-        
+
         train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
                             os.path.join(img_dir,'cars_train'),
                             os.path.join(img_dir,'devkit/cars_meta.mat'),
-                            transform=transform_train()
+                            transform=get_transform()
                             )
         #dirname = index2classlist[idx]
         dirname = train_dataset.map_class(idx)
-    
+
         filename = 'epoch_'+'{:0>3}'.format(epoch)+'_[org]_'+str(original)+'_[predict]_'+str(dirname)+'.jpg'
         filepath = os.path.join(os.path.join(result,str(epoch)),filename)
-        img_pad.save(filepath, "JPEG") 
+        img_pad.save(filepath, "JPEG")
 
-    
+
 if __name__ == '__main__':
     draw_patch()
