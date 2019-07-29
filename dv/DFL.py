@@ -13,6 +13,7 @@ class DFL_VGG16(nn.Module):
         1. M: number of classes (stanford cars dataset has 196 classes)
         2. k: number of discriminative patch detectors per class (in the paper, k=10)
 
+    This Net is mainly used to generate visualization. To get state-of-the-art results, ResNet50 will be preferred.
     """
     def __init__(self, k = 10, nclass = 196):
         super(DFL_VGG16, self).__init__()
@@ -52,6 +53,7 @@ class DFL_VGG16(nn.Module):
         # [batch_size, 1, k * M] --> [batch_size, M]
         self.cross_channel_pool = nn.AvgPool1d(kernel_size = k, stride = k, padding = 0)
 
+
     def forward(self, x):
         batchsize = x.size(0)
 
@@ -80,6 +82,15 @@ class DFL_VGG16(nn.Module):
 
 
 class DFL_ResNet50(nn.Module):
+
+    """
+    We also extend the basic DFL (using VGG16) as presented in the paper to use ResNet50 as feature extractor.
+    Modifications and highlights include:
+    - Added fully connected layers (conv layer was directly connected to output layer in the quick-and-dirty)
+    - Added dropout layer in G-stream (for learning global features)
+    - Used batch normalization
+
+    """
     def __init__(self, k = 10, nclass = 196):
         super(DFL_ResNet50, self).__init__()
         self.k = k
@@ -113,18 +124,24 @@ class DFL_ResNet50(nn.Module):
         # G-Stream
         self.conv5 = conv5
         self.cls5 = nn.Sequential(
-            nn.Conv2d(2048, nclass, kernel_size=1, stride = 1, padding = 0),
+            #nn.Conv2d(2048, nclass, kernel_size=1, stride = 1, padding = 0),
+            nn.Conv2d(2048, 1024, kernel_size=1, stride = 1, padding = 0),
             nn.BatchNorm2d(nclass),
             nn.ReLU(True),
             nn.AdaptiveAvgPool2d((1,1)),
+            # Add FC units
+            nn.Dropout(),
+            nn.Linear(1024, nclass)
             )
 
         # P-Stream
         self.conv6 = conv6
         self.pool6 = pool6
         self.cls6 = nn.Sequential(
-            nn.Conv2d(k * nclass, nclass, kernel_size = 1, stride = 1, padding = 0),
+            #nn.Conv2d(k * nclass, nclass, kernel_size = 1, stride = 1, padding = 0),
+            nn.Conv2d(k * nclass, k * nclass, kernel_size = 1, stride = 1, padding = 0),
             nn.AdaptiveAvgPool2d((1,1)),
+            nn.Linear(k * nclass, nclass)
             )
 
         # Side-branch

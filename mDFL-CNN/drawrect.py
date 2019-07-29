@@ -1,6 +1,7 @@
 from dv.transform import *
 from dv.init import *
 from dv.MyImageFolderWithPaths import CarsDataset
+from dv.DFL import DFL_ResNet50
 from train import *
 from validate import *
 import sys
@@ -12,12 +13,8 @@ import time
 import warnings
 import torch
 import torch.nn as nn
-import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-import torch.optim
-import torch.utils.data
-import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from PIL import Image, ImageFont, ImageDraw
@@ -25,6 +22,26 @@ import os
 import re
 import numpy as np
 from utils.util import *
+
+parser = argparse.ArgumentParser(description='Discriminative Filter Learning within a CNN')
+parser.add_argument('--dataroot', default = './dataset', metavar='DIR',
+                    help='path to dataset')
+parser.add_argument('--result', default = './vis_result', metavar='DIR',
+                    help='path to dataset')
+parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
+                    metavar='LR', help='initial learning rate')
+parser.add_argument('--momentum', default=0.9, type=float,
+                    metavar='momentum', help='momentum')
+parser.add_argument('--weight_decay', '--wd', default=0.0001, type=float,
+                    metavar='W', help='weight decay (default: 1e-4)')
+parser.add_argument('--gpu', default=1, type=int,
+                    help='GPU nums to use.')
+parser.add_argument('--vis_img', default = './vis_bmw1', metavar='DIR',
+                help='path to dataset')
+parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
+                    help='manual epoch number (useful on restarts)')
+parser.add_argument('--class_idx', default = 27, type = int, metavar='N',
+                help='class number')
 
 def scale_width(img, target_width):
     ow, oh = img.size
@@ -168,7 +185,7 @@ def draw_patch_v2(epoch, model, args, class_idx):
             draw.rectangle((p_tl, p_br), outline='green')
 
         # search corresponding classname
-        idx = int(index[0])
+        idx = int(index[0]) + 1
         img_dir = os.path.abspath(args.dataroot)
         train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
                             os.path.join(img_dir,'cars_train'),
@@ -177,17 +194,11 @@ def draw_patch_v2(epoch, model, args, class_idx):
                             )
         #dirname = index2classlist[idx]
         dirname = train_dataset.map_class(idx)
+        print("Interpreting for: ", train_dataset.map_class(class_idx), " (true class), ", dirname, " (predicted).")
 
         filename = 'epoch_'+'{:0>3}'.format(epoch)+'_[org]_'+str(original)+'_[predict]_'+str(dirname)+'.jpg'
         filepath = os.path.join(os.path.join(result,str(epoch)),filename)
         img_pad.save(filepath, "JPEG")
-
-
-if __name__ == '__main__':
-    draw_patch()
-
-
-
 
 def draw_patch(epoch, model, args):
     """Implement: use model to predict images and draw ten boxes by POOL6
@@ -249,6 +260,7 @@ def draw_patch(epoch, model, args):
                             )
         #dirname = index2classlist[idx]
         dirname = train_dataset.map_class(idx)
+        print("Interpreting for: ", train_dataset.map_class(class_idx), " (true class), ", dirname, " (predicted).")
 
         filename = 'epoch_'+'{:0>3}'.format(epoch)+'_[org]_'+str(original)+'_[predict]_'+str(dirname)+'.jpg'
         filepath = os.path.join(os.path.join(result,str(epoch)),filename)
@@ -256,4 +268,19 @@ def draw_patch(epoch, model, args):
 
 
 if __name__ == '__main__':
-    draw_patch()
+
+    args = parser.parse_args()
+
+    print(args)
+
+    model = DFL_ResNet50(k = 4, nclass = 196)
+    model = torch.nn.DataParallel(model, device_ids=0)
+    resume = 'weight/model_best.pth.tar'
+    checkpoint = torch.load(resume, map_location='cpu')
+    best_prec1 = checkpoint['best_prec1']
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay = args.weight_decay)
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    print('DFL-CNN <==> Load Network  <==> Continue from {} epoch {} with acc {}'.format(resume, checkpoint['epoch'], best_prec1))
+
+    draw_patch_v2(args.start_epoch, model, args, args.class_idx)
