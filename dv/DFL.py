@@ -126,13 +126,14 @@ class DFL_ResNet50(nn.Module):
         self.cls5 = nn.Sequential(
             #nn.Conv2d(2048, nclass, kernel_size=1, stride = 1, padding = 0),
             nn.Conv2d(2048, 1024, kernel_size=1, stride = 1, padding = 0),
-            nn.BatchNorm2d(nclass),
+            #nn.BatchNorm2d(nclass),
+            nn.BatchNorm2d(1024),
             nn.ReLU(True),
             nn.AdaptiveAvgPool2d((1,1)),
             # Add FC units
             nn.Dropout(),
-            nn.Linear(1024, nclass)
             )
+        self.fc5 = nn.Linear(1024, nclass)
 
         # P-Stream
         self.conv6 = conv6
@@ -141,8 +142,8 @@ class DFL_ResNet50(nn.Module):
             #nn.Conv2d(k * nclass, nclass, kernel_size = 1, stride = 1, padding = 0),
             nn.Conv2d(k * nclass, k * nclass, kernel_size = 1, stride = 1, padding = 0),
             nn.AdaptiveAvgPool2d((1,1)),
-            nn.Linear(k * nclass, nclass)
             )
+        self.fc6 = nn.Linear(k * nclass, nclass)
 
         # Side-branch
         self.cross_channel_pool = nn.AvgPool1d(kernel_size = k, stride = k, padding = 0)
@@ -150,32 +151,27 @@ class DFL_ResNet50(nn.Module):
     def forward(self, x):
         batchsize = x.size(0)
 
-        # Stem: Feature extraction
+        # Stem: Feature extractor
         inter4 = self.conv1_conv4(x)
-        #print('inter4',inter4.shape)
 
         # G-stream
-        #print('inter4',inter4.shape)
         x_g = self.conv5(inter4)
         out1 = self.cls5(x_g)
         out1 = out1.view(batchsize, -1)
-        #print('out1',out1.shape)
+        out1 = self.fc5(out1)
 
-        # P-stream ,indices is for visualization
+        # P-stream ,indices are for visualization
         x_p = self.conv6(inter4)
-        #print('conv6',x_p.shape)
         x_p, indices = self.pool6(x_p)
-        #print(x_p.shape)
         inter6 = x_p
         out2 = self.cls6(x_p)
         out2 = out2.view(batchsize, -1)
-        #print('out2',out2.shape)
+        out2 = self.fc6(out2)
 
-        # Side-branch
+        # Side-branch, no FC layers are required here
         inter6 = inter6.view(batchsize, -1, self.k * self.nclass)
         out3 = self.cross_channel_pool(inter6)
         out3 = out3.view(batchsize, -1)
-        #print('out3',out3.shape)
 
         return out1, out2, out3, indices
 
