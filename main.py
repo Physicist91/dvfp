@@ -2,9 +2,10 @@ from dv.DFL import DFL_VGG16, DFL_ResNet50, Energy_ResNet50
 from dv.init import *
 from dv.MyImageFolderWithPaths import CarsDataset, CUB_2011
 from dv.transform import *
-from utils.util import *
+from dv.util import *
 from train import *
 from validate import *
+from drawrect import *
 import sys
 import argparse
 import os
@@ -18,7 +19,6 @@ import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from drawrect import *
 
 parser = argparse.ArgumentParser(description='Discriminative Filter Learning within a CNN')
 parser.add_argument('--dataroot', metavar='DIR',
@@ -174,15 +174,15 @@ def main():
         train_dataset, batch_size=args.gpu * args.train_batchsize_per_gpu, shuffle=True,
         num_workers=args.workers, pin_memory=True, drop_last = False)
     test_loader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=args.testbatch, shuffle=True,
+        test_dataset, batch_size=args.test_batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True, drop_last = False)
     test_loader_simple = torch.utils.data.DataLoader(
-        test_dataset_simple, batch_size=args.testbatch, shuffle=True,
+        test_dataset_simple, batch_size=args.test_batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True, drop_last = False)
     print('Deep Vision <==> Part3 : loading dataset  <==> Done')
 
 
-    print('DFL-CNN <==> Part4 : model training  <==> Begin')
+    print('Deep Vision <==> Part4 : model training  <==> Begin')
 
     if args.gpu is not None:
         torch.cuda.empty_cache()

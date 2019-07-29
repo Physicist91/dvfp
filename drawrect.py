@@ -2,6 +2,7 @@ from dv.transform import *
 from dv.init import *
 from dv.MyImageFolderWithPaths import CarsDataset
 from dv.DFL import DFL_ResNet50
+from dv.util import *
 from train import *
 from validate import *
 import sys
@@ -21,7 +22,6 @@ from PIL import Image, ImageFont, ImageDraw
 import os
 import re
 import numpy as np
-from utils.util import *
 
 parser = argparse.ArgumentParser(description='Discriminative Filter Learning within a CNN')
 parser.add_argument('--dataroot', default = './dataset', metavar='DIR',

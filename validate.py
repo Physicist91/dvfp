@@ -1,19 +1,19 @@
 import torch
 import time
 import sys
-from utils.util import *
-from utils.save import *
+from dv.util import *
+from dv.save import *
 from tqdm import tqdm
 
 def validate_dv(args, val_loader, model, criterion, epoch):
     print('Deep Vision module: validating on the test set...')
-    
+
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
     log = Log()
-    model.eval()   
+    model.eval()
     end = time.time()
 
     total_output= []
@@ -40,7 +40,7 @@ def validate_dv(args, val_loader, model, criterion, epoch):
         else:
            total_output = torch.cat((total_output, output.data.float()) , 0)
            total_label = torch.cat((total_label , target.data.float()) , 0)
-        
+
     _,predict = torch.max(total_output,1)
 
     acc = torch.sum(torch.squeeze(predict).float() == total_label).item() / float(total_label.size()[0])
@@ -54,7 +54,7 @@ def validate(args, val_loader, model, criterion, epoch):
     top1 = AverageMeter()
     top5 = AverageMeter()
     log = Log()
-    model.eval()   
+    model.eval()
     end = time.time()
 
     # we may have ten d in data
@@ -88,13 +88,13 @@ def validate_simple(args, val_loader, model, criterion, epoch):
     top1 = AverageMeter()
     top5 = AverageMeter()
     log = Log()
-    model.eval()   
+    model.eval()
     end = time.time()
 
     # we may have ten d in data
     for i, (data, target) in enumerate(val_loader):
         target = target.type(torch.LongTensor)
-        
+
         if args.gpu is not None:
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             data = data.to(device)
