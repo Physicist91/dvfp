@@ -55,8 +55,8 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
-parser.add_argument('--pretrained', dest='pretrained', action='store_true',
-                    help='use pre-trained model')
+parser.add_argument('--class_idx', default = 27, type = int, metavar='N',
+                help='class number of the images to be visualized')
 parser.add_argument('--log_train_dir', default='log_train', type=str,
                     help='log for train')
 parser.add_argument('--log_test_dir', default='log_test', type=str,
@@ -115,12 +115,13 @@ def main():
             sample_dataset = CUB_2011(img_dir, train=True, transform=transform_sample, download=True)
 
         sample_loader = torch.utils.data.DataLoader(sample_dataset, batch_size=1, shuffle=True, num_workers=args.workers, pin_memory=True, drop_last = False)
-        center = init_patch(args, sample_loader, energyNet, 1024) #1024 channels in the feature map
 
         init_weights(model, init_type=args.init_type) # initialize all layers
         print('Network is initialized with: %s!' % args.init_type)
-        model.state_dict()['conv6.weight'] = center #the 1x1 filters are initialized with patch representations
-        print('Patch detectors are initialized with non-random init!')
+        if args.vis_img is not None:
+            center = init_patch(args, sample_loader, energyNet, 1024) #1024 channels in the feature map
+            model.state_dict()['conv6.weight'] = center #the 1x1 filters are initialized with patch representations
+            print('Patch detectors are initialized with non-random init!')
         model.to(device)
 
     criterion = nn.CrossEntropyLoss()
@@ -197,7 +198,7 @@ def main():
         print('Model on GPU?: ', next(model.parameters()).is_cuda)
 
         # evaluate on validation set
-        if epoch % args.eval_epoch == 0:
+        if args.evaluate and epoch % args.eval_epoch == 0:
             prec1 = validate_dv(args, test_loader, model, criterion, epoch)
 
             # remember best prec@1 and save checkpoint
@@ -213,7 +214,7 @@ def main():
 
         # do a test for visualization
         if vis_img is not None and epoch % args.vis_epoch  == 0 and epoch != 0:
-            draw_patch(epoch, model, args)
+            draw_patch_v2(epoch, model, args, args.class_idx)
 
 
 

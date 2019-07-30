@@ -77,7 +77,7 @@ def validate(args, val_loader, model, criterion, epoch):
             top5.update(prec5[0], 1)
             print('DFL-CNN <==> Test <==> Img:{} No:{} Top1 {:.3f} Top5 {:.3f}'.format(i, idx, prec1.cpu().numpy()[0], prec5.cpu().numpy()[0]))
 
-    print('DFL-CNN <==> Test Total <==> Top1 {:.3f}% Top5 {:.3f}%'.format(top1.avg, top5.avg))
+    print('Deep Vision <==> Test Total <==> Top1 {:.3f}% Top5 {:.3f}%'.format(top1.avg, top5.avg))
     log.save_test_info(epoch, top1, top5)
     return top1.avg
 
@@ -114,6 +114,6 @@ def validate_simple(args, val_loader, model, criterion, epoch):
             if i % 1000 == 0:
                 print('DFL-CNN <==> Test <==> Img:{} Top1 {:.3f} Top5 {:.3f}'.format(i, prec1.cpu().numpy()[0], prec5.cpu().numpy()[0]))
 
-    print('DFL-CNN <==> Test Total <==> Top1 {:.3f}% Top5 {:.3f}%'.format(top1.avg, top5.avg))
+    print('Deep Vision <==> Test Total <==> Top1 {:.3f}% Top5 {:.3f}%'.format(top1.avg, top5.avg))
     log.save_test_info(epoch, top1, top5)
     return top1.avg

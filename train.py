@@ -63,7 +63,7 @@ def train(args, train_loader, model, criterion, optimizer, epoch):
         optimizer.step()
 
         if i % args.print_freq == 0:
-            print('DFL-CNN <==> Train Epoch: [{0}][{1}/{2}]\n'
+            print('Deep Vision <==> Train Epoch: [{0}][{1}/{2}]\n'
                 'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                 'Loss1 {loss1.val:.4f} ({loss1.avg:.4f})\t'
                 'Loss2 {loss2.val:.4f} ({loss2.avg:.4f})\t'

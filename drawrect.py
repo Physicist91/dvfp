@@ -177,8 +177,8 @@ def draw_patch_v2(epoch, model, args, class_idx):
         # in test I use 1st class, so I choose indices[0, 9]
         for i in vrange:
             indice = indices[0, k*class_idx + i]
-            #row, col = indice/56, indice%56
-            row, col = indice/28, indice%28 #ResNet feature map size
+            row, col = indice/56, indice%56
+            #row, col = indice/28, indice%28 #ResNet feature map size
             p_tl = (8*col, 8*row)
             p_br = (col*8+92, row*8+92)
             draw = ImageDraw.Draw(img_pad)
@@ -281,6 +281,6 @@ if __name__ == '__main__':
     model.load_state_dict(checkpoint['state_dict'])
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay = args.weight_decay)
     optimizer.load_state_dict(checkpoint['optimizer'])
-    print('DFL-CNN <==> Load Network  <==> Continue from {} epoch {} with acc {}'.format(resume, checkpoint['epoch'], best_prec1))
+    print('Deep Vision <==> loading network  <==> Continue from {} epoch {} with acc {}'.format(resume, checkpoint['epoch'], best_prec1))
 
     draw_patch_v2(args.start_epoch, model, args, args.class_idx)

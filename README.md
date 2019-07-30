@@ -8,6 +8,9 @@ Here we implement the hottest state-of-the-art techniques for fine-grained class
 
 Datasets:
 + [CUB-200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html)
++ [Stanford Cars](https://ai.stanford.edu/~jkrause/cars/car_dataset.html)
+
+<div align=center><img width="560" height="720" src="https://ai.stanford.edu/~jkrause/cars/car6.jpg"/></div>
 
 Implemented using [PyTorch](https://pytorch.org/). This work is done as part of the final project for **Deep Vision, ST2019**.
 
