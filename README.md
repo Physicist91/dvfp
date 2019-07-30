@@ -10,7 +10,26 @@ Datasets:
 + [CUB-200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html)
 + [Stanford Cars](https://ai.stanford.edu/~jkrause/cars/car_dataset.html)
 
-<div align=center><img width="560" height="720" src="https://ai.stanford.edu/~jkrause/cars/car6.jpg"/></div>
+<tr>
+        <td>
+          <table width="800" cellpadding="0" cellspacing="0">
+            <tbody><tr>
+              <td><img src="https://ai.stanford.edu/~jkrause/cars/car1.jpg" width="200" height="140"></td>
+              <td><img src="https://ai.stanford.edu/~jkrause/cars/car2.jpg" width="200" height="140"></td>
+              <td><img src="https://ai.stanford.edu/~jkrause/cars/car3.jpg" width="200" height="140"></td>
+              <td><img src="https://ai.stanford.edu/~jkrause/cars/car4.jpg" width="200" height="140"></td>
+            </tr>
+            <tr>
+              <td><img src="https://ai.stanford.edu/~jkrause/cars/car5.jpg" width="200" height="140"></td>
+              <td><img src="https://ai.stanford.edu/~jkrause/cars/car6.jpg" width="200" height="140"></td>
+              <td><img src="https://ai.stanford.edu/~jkrause/cars/car7.jpg" width="200" height="140"></td>
+              <td><img src="https://ai.stanford.edu/~jkrause/cars/car8.jpg" width="200" height="140"></td>
+            </tr>
+          </tbody></table>
+        </td>
+</tr>
+
+
 
 Implemented using [PyTorch](https://pytorch.org/). This work is done as part of the final project for **Deep Vision, ST2019**.
 
