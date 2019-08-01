@@ -118,7 +118,7 @@ def main():
 
         init_weights(model, init_type=args.init_type) # initialize all layers
         print('Network is initialized with: %s!' % args.init_type)
-        if args.vis_img is not None:
+        if args.vis_img is None:
             center = init_patch(args, sample_loader, energyNet, 1024) #1024 channels in the feature map
             model.state_dict()['conv6.weight'] = center #the 1x1 filters are initialized with patch representations
             print('Patch detectors are initialized with non-random init!')
