@@ -9,14 +9,9 @@ from visualize import *
 import sys
 import argparse
 import os
-import random
-import shutil
-import warnings
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-import torch.optim
-import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
