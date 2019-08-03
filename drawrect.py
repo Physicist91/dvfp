@@ -134,7 +134,7 @@ def get_transform():
     transform_list.append(transforms.Normalize(mean=(0.5,0.5,0.5),std=(0.5,0.5,0.5)))
     return transforms.Compose(transform_list)
 
-def draw_patch_v2(epoch, model, args, class_idx):
+def draw_patch_v2(epoch, model, args):
     """Implement: use model to predict images and draw ten boxes by POOL6
     path to images need to predict is in './vis_img'
 
@@ -152,14 +152,26 @@ def draw_patch_v2(epoch, model, args, class_idx):
         os.mkdir(result)
 
     path_img = os.path.join(os.path.abspath('./'), args.vis_img)
-    num_imgs = len(os.listdir(path_img))
+
+    num_imgs = list(os.listdir(path_img))
 
     dirs = os.path.join(result, str(epoch))
     if not os.path.exists(dirs):
         os.mkdir(dirs)
+    
+    img_dir = os.path.abspath(args.dataroot)
+    train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
+                        os.path.join(img_dir,'cars_train'),
+                        os.path.join(img_dir,'devkit/cars_meta.mat'),
+                        transform=get_transform()
+                        )
+    classnames = len(num_imgs)*[0]
+    for el in train_dataset.car_annotations:
+        if el[-1][0] in num_imgs:
+            classnames[num_imgs.index(el[-1][0])] = el[-2][0][0]
 
-    for original in range(num_imgs):
-        img_path = os.path.join(path_img, '{}.jpg'.format(original))
+    for j, original in enumerate(num_imgs):
+        img_path = os.path.join(path_img, '{}'.format(original))
 
         transform1 = get_transform()       # transform for predict
         transform2 = transform_onlysize()  # transform for draw
@@ -176,7 +188,7 @@ def draw_patch_v2(epoch, model, args, class_idx):
         # select from index - index+9 in 2000
         # in test I use 1st class, so I choose indices[0, 9]
         for i in vrange:
-            indice = indices[0, k*class_idx + i]
+            indice = indices[0, k*classnames[j] + i]
             row, col = indice/56, indice%56
             #row, col = indice/28, indice%28 #ResNet feature map size
             p_tl = (8*col, 8*row)
@@ -185,16 +197,10 @@ def draw_patch_v2(epoch, model, args, class_idx):
             draw.rectangle((p_tl, p_br), outline='green')
 
         # search corresponding classname
-        idx = int(index[0]) + 1
-        img_dir = os.path.abspath(args.dataroot)
-        train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
-                            os.path.join(img_dir,'cars_train'),
-                            os.path.join(img_dir,'devkit/cars_meta.mat'),
-                            transform=get_transform()
-                            )
+     
         #dirname = index2classlist[idx]
-        dirname = train_dataset.map_class(idx)
-        print("Interpreting for: ", train_dataset.map_class(class_idx), " (true class), ", dirname, " (predicted).")
+        dirname = train_dataset.map_class(int(index)+1)
+        print("Interpreting for: ", train_dataset.map_class(classnames[j]), " (true class), ", dirname, " (predicted).")
 
         filename = 'epoch_'+'{:0>3}'.format(epoch)+'_[org]_'+str(original)+'_[predict]_'+str(dirname)+'.jpg'
         filepath = os.path.join(os.path.join(result,str(epoch)),filename)

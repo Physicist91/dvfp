@@ -26,8 +26,8 @@ def validate_dv(args, val_loader, model, criterion, epoch):
 
         if args.gpu is not None:
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-            data = Variable(data.to(device).reshape(data.size(0) * 10, 3, 448, 448)) # bs*10, 3, 448, 448
-            target = Variable(target.to(device))
+            data = data.to(device).reshape(data.size(0) * 10, 3, 448, 448) # bs*10, 3, 448, 448
+            target = target.to(device)
             target = target.resize(int(data.size(0)/10), 1).expand(int(data.size(0)/10),10).resize(data.size(0))
 
         output1, output2, output3, _ = model(data)
@@ -45,6 +45,7 @@ def validate_dv(args, val_loader, model, criterion, epoch):
 
     acc = torch.sum(torch.squeeze(predict).float() == total_label).item() / float(total_label.size()[0])
     print(' test acc == ' + str(acc))
+    log.save_test_info(epoch, top1=acc, top5=None)
     return acc
 
 

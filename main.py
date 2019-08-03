@@ -6,6 +6,7 @@ from dv.util import *
 from train import *
 from validate import *
 from drawrect import *
+from torch.optim import lr_scheduler
 import sys
 import argparse
 import os
@@ -51,7 +52,7 @@ parser.add_argument('--weight_decay', '--wd', default=0.0001, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--print-freq', '-p', default=10, type=int,
                     metavar='N', help='print frequency (default: 10)')
-parser.add_argument('--resume', default='', type=str, metavar='PATH',
+parser.add_argument('--resume', default='weight/model_best.pth.tar', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
@@ -73,6 +74,11 @@ parser.add_argument('--h', default=448, type=int,
                     help='desired image height to crop, seen as align')
 parser.add_argument('--dataset',  default='cars', type=str,
                     metavar='dataset',help='Data to use (cars, birds)')
+parser.add_argument('--cyclic_scheduler', default=False, type=bool)
+parser.add_argument('--sched_stepsize', default=10, type=int,
+		    help='desired step size for the lr decay in the lr_scheduler')
+parser.add_argument('--sched_decay', default=0.1, type=float,
+		    help='desired learning rate decay in the lr_scheduler')
 
 best_prec1 = 0
 
@@ -115,6 +121,7 @@ def main():
             sample_dataset = CUB_2011(img_dir, train=True, transform=transform_sample, download=True)
 
         sample_loader = torch.utils.data.DataLoader(sample_dataset, batch_size=1, shuffle=True, num_workers=args.workers, pin_memory=True, drop_last = False)
+
 
         init_weights(model, init_type=args.init_type) # initialize all layers
         print('Network is initialized with: %s!' % args.init_type)
@@ -180,6 +187,14 @@ def main():
     test_loader_simple = torch.utils.data.DataLoader(
         test_dataset_simple, batch_size=args.test_batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True, drop_last = False)
+
+    if args.cyclic_scheduler:
+        stepsize = int(len(train_dataset) / args.train_batchsize_per_gpu / 6)
+        scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=args.lr, max_lr=args.lr/8, step_size_up=stepsize,
+                                         )
+    else:
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=args.sched_stepsize, gamma=args.sched_decay)
+
     print('Deep Vision <==> Part3 : loading dataset  <==> Done')
 
 
@@ -188,17 +203,19 @@ def main():
     if args.gpu is not None:
         torch.cuda.empty_cache()
 
-    for epoch in range(args.start_epoch, args.epochs):
-        adjust_learning_rate(args, optimizer, epoch, gamma = 0.1)
+
+    for epoch in range(args.start_epoch, args.epochs+args.start_epoch):
+        
+    #########################adjust_learning_rate(args, optimizer, epoch, gamma = 0.1)
 
         # train for one epoch
-        train(args, train_loader, model, criterion, optimizer, epoch)
+        train(args, train_loader, model, criterion, optimizer, epoch, scheduler)
 
         # check if model is still on GPU
         print('Model on GPU?: ', next(model.parameters()).is_cuda)
 
         # evaluate on validation set
-        if args.evaluate and epoch % args.eval_epoch == 0:
+        if epoch % args.eval_epoch == 0 and epoch != 0:
             prec1 = validate_dv(args, test_loader, model, criterion, epoch)
 
             # remember best prec@1 and save checkpoint
@@ -213,8 +230,8 @@ def main():
             }, is_best)
 
         # do a test for visualization
-        if vis_img is not None and epoch % args.vis_epoch  == 0 and epoch != 0:
-            draw_patch_v2(epoch, model, args, args.class_idx)
+        if args.vis_img is not None and epoch % args.vis_epoch  == 0 and epoch != 0:
+            draw_patch_v2(epoch, model, args)
 
 
 
