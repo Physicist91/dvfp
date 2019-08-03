@@ -52,8 +52,6 @@ class Log(object):
         # check log_dir
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
-        if not os.path.exists(log_file_minimal):
-            os.mknod(log_file_minimal)
         log_file = os.path.join(log_dir, 'log_test.txt')
         log_file_minimal = os.path.join(log_dir, 'log_test_minimal.txt')
         if top5 == None:
