@@ -5,6 +5,9 @@ Here we implement state-of-the-art techniques for fine-grained classification.
 1. [Discriminative filter learning within CNN](https://arxiv.org/abs/1611.09932) -- CVPR, June 2018
 2. [Bilinear pooling](http://vis-www.cs.umass.edu/bcnn/docs/bcnn_iccv15.pdf) -- ICCV, 2015
 
+To this end, we authored a few notebooks that illustrate both techniques:
+- `dfl.ipynb` outlines major components and implementation of the DFL architecture.
+
 Datasets:
 + [CUB-200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html)
 + [Stanford Cars](https://ai.stanford.edu/~jkrause/cars/car_dataset.html)
@@ -30,15 +33,11 @@ Datasets:
 
 Implemented using [PyTorch](https://pytorch.org/). This work is done as part of the final project for **Deep Vision, ST2019**.
 
-The following article has also inspired this work:
-- [Weakly supervised Data Augmentation Network](https://arxiv.org/abs/1901.09891) -- ArXiV preprint, March 2019.
+This work is also partly inspired by
+- [Weakly supervised Data Augmentation Network](https://arxiv.org/abs/1901.09891), ArXiV preprint, March 2019.
 
-Authors:
-* Denis Zavadski
-* Kevin Siswandi
+The poster for this project can be found below.
 
 *****
-
-# Poster Session
 
 ![poster](poster.png)
