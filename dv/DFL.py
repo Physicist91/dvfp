@@ -124,26 +124,26 @@ class DFL_ResNet50(nn.Module):
         # G-Stream
         self.conv5 = conv5
         self.cls5 = nn.Sequential(
-            #nn.Conv2d(2048, nclass, kernel_size=1, stride = 1, padding = 0),
-            nn.Conv2d(2048, 1024, kernel_size=1, stride = 1, padding = 0),
-            #nn.BatchNorm2d(nclass),
-            nn.BatchNorm2d(1024),
+            nn.Conv2d(2048, nclass, kernel_size=1, stride = 1, padding = 0),
+            #nn.Conv2d(2048, 1024, kernel_size=1, stride = 1, padding = 0),
+            nn.BatchNorm2d(nclass),
+            #nn.BatchNorm2d(1024),
             nn.ReLU(True),
             nn.AdaptiveAvgPool2d((1,1)),
             # Add FC units
-            nn.Dropout(),
+            #nn.Dropout(),
             )
-        self.fc5 = nn.Linear(1024, nclass)
+        #self.fc5 = nn.Linear(1024, nclass)
 
         # P-Stream
         self.conv6 = conv6
         self.pool6 = pool6
         self.cls6 = nn.Sequential(
-            #nn.Conv2d(k * nclass, nclass, kernel_size = 1, stride = 1, padding = 0),
-            nn.Conv2d(k * nclass, k * nclass, kernel_size = 1, stride = 1, padding = 0),
+            nn.Conv2d(k * nclass, nclass, kernel_size = 1, stride = 1, padding = 0),
+            #nn.Conv2d(k * nclass, k * nclass, kernel_size = 1, stride = 1, padding = 0),
             nn.AdaptiveAvgPool2d((1,1)),
             )
-        self.fc6 = nn.Linear(k * nclass, nclass)
+        #self.fc6 = nn.Linear(k * nclass, nclass)
 
         # Side-branch
         self.cross_channel_pool = nn.AvgPool1d(kernel_size = k, stride = k, padding = 0)
@@ -158,7 +158,7 @@ class DFL_ResNet50(nn.Module):
         x_g = self.conv5(inter4)
         out1 = self.cls5(x_g)
         out1 = out1.view(batchsize, -1)
-        out1 = self.fc5(out1)
+        #out1 = self.fc5(out1)
 
         # P-stream ,indices are for visualization
         x_p = self.conv6(inter4)
@@ -166,7 +166,7 @@ class DFL_ResNet50(nn.Module):
         inter6 = x_p
         out2 = self.cls6(x_p)
         out2 = out2.view(batchsize, -1)
-        out2 = self.fc6(out2)
+        #out2 = self.fc6(out2)
 
         # Side-branch, no FC layers are required here
         inter6 = inter6.view(batchsize, -1, self.k * self.nclass)

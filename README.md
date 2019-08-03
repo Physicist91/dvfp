@@ -41,8 +41,4 @@ Authors:
 
 # Poster Session
 
-<object data="conference_poster_6.pdf" type="application/pdf">
-    <embed src="conference_poster_6.pdf">
-        <p>This browser does not support PDFs. Please download the PDF to view it: <a href="http://yoursite.com/the.pdf">Download PDF</a>.</p>
-    </embed>
-</object>
+![poster](poster.png)
