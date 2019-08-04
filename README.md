@@ -5,9 +5,10 @@ Here we implement state-of-the-art techniques for fine-grained classification.
 1. [Discriminative filter learning within CNN](https://arxiv.org/abs/1611.09932) -- CVPR, June 2018
 2. [Bilinear CNN](http://vis-www.cs.umass.edu/bcnn/docs/bcnn_iccv15.pdf) -- ICCV, 2015
 
-To this end, we authored a few notebooks that illustrate both techniques:
+To this end, we authored a few notebooks that illustrate both techniques as well as other approaches:
 - `dfl.ipynb` outlines major components and implementation of the DFL architecture.
 - `BilinearModel.ipynb` contains a simple implementation of Bilinear CNN
+- `ResNet34.ipynb` contains a straightforward transfer learning approach using ResNet34.
 
 Datasets:
 + [CUB-200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html)
