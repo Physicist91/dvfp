@@ -6,8 +6,9 @@ Here we implement state-of-the-art techniques for fine-grained classification.
 2. [Bilinear CNN](http://vis-www.cs.umass.edu/bcnn/docs/bcnn_iccv15.pdf) -- ICCV, 2015
 
 To this end, we authored a few notebooks that illustrate both techniques as well as other approaches:
+- `Plain ResNet50, VGG19_bn.ipynb` contain codes and description for our fine-tuned ResNet-50 and VGG-19 models.
 - `dfl.ipynb` outlines major components and implementation of the DFL architecture.
-- `BilinearModel.ipynb` contains a simple implementation of Bilinear CNN
+- `BiLinPol FastAI CARSET.ipynb` and `BilinearModel.ipynb` contain a simple implementation of Bilinear CNN
 - `ResNet34.ipynb` contains a straightforward transfer learning approach using ResNet34.
 
 Datasets:
@@ -38,7 +39,21 @@ Implemented using [PyTorch](https://pytorch.org/). This work is done as part of 
 This work is also partly inspired by
 - [Weakly supervised Data Augmentation Network](https://arxiv.org/abs/1901.09891), ArXiV preprint, March 2019.
 
-The poster for this project can be found below.
+Usage:
+```
+# clone this repo
+git clone https://github.com/Physicist91/dvfp
+
+# first edit the parameters (e.g. GPU number, batch_size) then execute run.sh
+# to resume training, specify the path to weights in --resume
+./run.sh
+```
+
+Final results
+
+![table](results.png)
+
+The weights can be downloaded from here. The poster for this project can be found below (note that the numbers/results have been updated -- refer to the table above).
 
 *****
 
