@@ -52,7 +52,7 @@ git clone https://github.com/Physicist91/dvfp
 
 Stanford Cars is the primary dataset used in this project. CUB_200_2011 is used only for further comparison and testing. The final results are:
 
-![table](results.png)
+![table](table1.png)
 
 The weights can be downloaded from [here](https://www.dropbox.com/sh/d9lip2gropyz0iq/AADH6w2pIUxYyMqstz64QLIAa?dl=0). The poster for this project can be found below (note that the numbers/results have been updated -- refer to the table above).
 
