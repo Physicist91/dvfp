@@ -1,6 +1,6 @@
 from dv.transform import *
 from dv.init import *
-from dv.MyImageFolderWithPaths import CarsDataset
+from dv.MyImageFolderWithPaths import CarsDataset, CUB_2011
 from dv.DFL import DFL_ResNet50
 from dv.util import *
 from train import *
@@ -160,15 +160,25 @@ def draw_patch_v2(epoch, model, args):
         os.mkdir(dirs)
     
     img_dir = os.path.abspath(args.dataroot)
-    train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
-                        os.path.join(img_dir,'cars_train'),
-                        os.path.join(img_dir,'devkit/cars_meta.mat'),
-                        transform=get_transform()
-                        )
     classnames = len(num_imgs)*[0]
-    for el in train_dataset.car_annotations:
-        if el[-1][0] in num_imgs:
-            classnames[num_imgs.index(el[-1][0])] = el[-2][0][0]
+
+    if args.dataset == 'cars':
+        train_dataset = CarsDataset(os.path.join(img_dir,'devkit/cars_train_annos.mat'),
+                            os.path.join(img_dir,'cars_train'),
+                            os.path.join(img_dir,'devkit/cars_meta.mat'),
+                            transform=get_transform()
+                            )
+        for el in train_dataset.car_annotations:
+            if el[-1][0] in num_imgs:
+                classnames[num_imgs.index(el[-1][0])] = el[-2][0][0]
+
+    if args.dataset == 'birds':
+        train_dataset = train_dataset = CUB_2011(img_dir, train=True, transform=None)
+        for im in num_imgs:
+            for idx in range(train_dataset.data.shape[0]):
+                if im in train_dataset.data.iloc[idx]['filepath']:
+                    classnames[num_imgs.index(im)] = train_dataset.data.iloc[idx]['target']
+
 
     for j, original in enumerate(num_imgs):
         img_path = os.path.join(path_img, '{}'.format(original))
@@ -195,12 +205,23 @@ def draw_patch_v2(epoch, model, args):
             p_br = (col*8+92, row*8+92)
             draw = ImageDraw.Draw(img_pad)
             draw.rectangle((p_tl, p_br), outline='green')
+            break
 
         # search corresponding classname
      
+        if args.dataset == 'cars':
+            classIndex = train_dataset.map_class(classnames[j])
+        if args.dataset == 'birds':
+            classIndex = str(original)
+
         #dirname = index2classlist[idx]
-        dirname = train_dataset.map_class(int(index)+1)
-        print("Interpreting for: ", train_dataset.map_class(classnames[j]), " (true class), ", dirname, " (predicted).")
+        if args.dataset=='cars':
+            dirname = train_dataset.map_class(int(index)+1)
+        if args.dataset=='birds':
+            for el in train_dataset.image_class['class_name'].where(train_dataset.image_class['target'] == int(index)+1):
+                if str(el) != 'nan':
+                    dirname=el
+        print("Interpreting for: ", classIndex, " (true class), ", dirname, " (predicted).")
 
         filename = 'epoch_'+'{:0>3}'.format(epoch)+'_[org]_'+str(original)+'_[predict]_'+str(dirname)+'.jpg'
         filepath = os.path.join(os.path.join(result,str(epoch)),filename)
@@ -255,6 +276,7 @@ def draw_patch(epoch, model, args):
             p_br = (col*8+92, row*8+92)
             draw = ImageDraw.Draw(img_pad)
             draw.rectangle((p_tl, p_br), outline='red')
+            break
 
         # search corresponding classname
         idx = int(index[0])
