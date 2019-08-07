@@ -9,8 +9,8 @@ class DFL_VGG16(nn.Module):
     * Conv1 - Conv 4 is based on VGG-16 (the resulting feature map has receptive field of 92 x 92 with stride 8)
     * Asymmetric two-stream architecture: Conv 5 (G-Stream) and Conv 6 (P-Stream)
 
-    The variable names here follow the original paper:
-        1. M: number of classes (stanford cars dataset has 196 classes)
+    Args:
+        1. nclass: number of classes (stanford cars dataset has 196 classes)
         2. k: number of discriminative patch detectors per class (in the paper, k=10)
 
     This Net is mainly used to generate visualization. To get state-of-the-art results, ResNet50 will be preferred.
@@ -85,10 +85,6 @@ class DFL_ResNet50(nn.Module):
 
     """
     We also extend the basic DFL (using VGG16) as presented in the paper to use ResNet50 as feature extractor.
-    Modifications and highlights include:
-    - Added fully connected layers (conv layer was directly connected to output layer in the quick-and-dirty)
-    - Added dropout layer in G-stream (for learning global features)
-    - Used batch normalization
 
     """
     def __init__(self, k = 10, nclass = 196):

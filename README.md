@@ -39,21 +39,22 @@ Implemented using [PyTorch](https://pytorch.org/). This work is done as part of 
 This work is also partly inspired by
 - [Weakly supervised Data Augmentation Network](https://arxiv.org/abs/1901.09891), ArXiV preprint, March 2019.
 
-Usage:
+To train a DFL model:
+
 ```
 # clone this repo
 git clone https://github.com/Physicist91/dvfp
 
 # first edit the parameters (e.g. GPU number, batch_size) then execute run.sh
-# to resume training, specify the path to weights in --resume
+# to load our trained model, specify the path to weights in --resume
 ./run.sh
 ```
 
-Final results
+Stanford Cars is the primary dataset used in this project. CUB_200_2011 is used only for further comparison and testing. The final results are:
 
 ![table](results.png)
 
-The weights can be downloaded from here. The poster for this project can be found below (note that the numbers/results have been updated -- refer to the table above).
+The weights can be downloaded from [here](https://www.dropbox.com/sh/d9lip2gropyz0iq/AADH6w2pIUxYyMqstz64QLIAa?dl=0). The poster for this project can be found below (note that the numbers/results have been updated -- refer to the table above).
 
 *****
 
