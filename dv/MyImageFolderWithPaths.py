@@ -35,7 +35,12 @@ class CUB_2011(Dataset):
                                          sep=' ', names=['img_id', 'target'])
         train_test_split = pd.read_csv(os.path.join(self.root, 'CUB_200_2011', 'train_test_split.txt'),
                                        sep=' ', names=['img_id', 'is_training_img'])
-
+    
+        classes = pd.read_csv(os.path.join(self.root, 'CUB_200_2011', 'classes.txt'),
+                                       sep=' ', names=['target', 'class_name'])
+        self.image_class = pd.merge(images, image_class_labels, on='img_id')
+        self.image_class = pd.merge(self.image_class, classes, on='target')
+ 
         data = images.merge(image_class_labels, on='img_id')
         self.data = data.merge(train_test_split, on='img_id')
 
