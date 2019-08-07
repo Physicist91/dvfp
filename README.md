@@ -8,7 +8,7 @@ Here we implement state-of-the-art techniques for fine-grained classification.
 To this end, we authored a few notebooks that illustrate both techniques as well as other approaches:
 - `Plain ResNet50, VGG19_bn.ipynb` contain codes and description for our fine-tuned ResNet-50 and VGG-19 models.
 - `dfl.ipynb` outlines major components and implementation of the DFL architecture.
-- `BiLinPol FastAI CARSET.ipynb` and `BilinearModel.ipynb` contain a simple implementation of Bilinear CNN
+- `BilinearPooling with FastAI on Stenford Cars.ipynb` contains a simple implementation of Bilinear CNN
 - `ResNet34.ipynb` contains a straightforward transfer learning approach using ResNet34.
 
 Datasets:
